@@ -1,0 +1,7 @@
+# Danh sách IP bị block
+# Mỗi dòng một IP address
+# Dòng bắt đầu bằng # là comment, sẽ bị bỏ qua
+# Ví dụ:
+# 192.168.1.100
+# 192.168.1.101
+

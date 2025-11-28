@@ -1,0 +1,102 @@
+# ========================
+# Node.js / Frontend
+# ========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Build directories
+frontend/build/
+frontend/dist/
+frontend/.cache/
+
+# Electron build output
+frontend/dist-electron/
+frontend/out/
+
+# Testing
+coverage/
+.nyc_output
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+.springBeans
+.sts4-cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.iml
+
+# ========================
+# Java / Backend
+# ========================
+backend/target/
+backend/*.jar
+backend/*.war
+backend/*.ear
+backend/*.class
+
+# Maven
+.mvn/
+mvnw
+mvn.cmd
+
+# Gradle
+.gradle/
+build/
+
+# Logs
+*.log
+logs/
+
+# ========================
+# Database
+# ========================
+*.db
+*.sqlite
+*.sqlite3
+
+# ========================
+# Environment files
+# ========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ========================
+# Temporary files
+# ========================
+*.tmp
+*.temp
+*.cache
+*.swp
+*.bak
+
+# ========================
+# Archives (optional - xóa nếu muốn keep)
+# ========================
+*.rar
+*.zip
+*.7z
+*.tar.gz
+
+# ========================
+# Package locks (optional - giữ lại package-lock.json thường tốt hơn)
+# ========================
+# package-lock.json
+# yarn.lock
+

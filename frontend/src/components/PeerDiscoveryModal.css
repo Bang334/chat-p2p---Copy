@@ -1,0 +1,175 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.peer-discovery-modal {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e4e6eb;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #050505;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #65676b;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.close-btn:hover {
+  background: #f0f2f5;
+}
+
+.modal-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.connected-peers-section {
+  margin-bottom: 0;
+}
+
+.peers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.peer-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid #f0f2f5;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.peer-item:hover {
+  background: #f7f8fa;
+  border-color: #e4e6eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.peer-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.peer-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 2px;
+}
+
+.peer-username {
+  font-weight: 600;
+  color: #1c1e21;
+  font-size: 15px;
+}
+
+.peer-ip-text {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #65676b;
+}
+
+.peer-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #31a24c;
+  background: #e7f3ff;
+  padding: 6px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.status-dot-small {
+  width: 6px;
+  height: 6px;
+  background-color: #31a24c;
+  border-radius: 50%;
+}
+
+.modal-footer {
+  padding: 20px;
+  border-top: 1px solid #e4e6eb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cancel-btn {
+  background: #e4e6eb;
+  color: #050505;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.cancel-btn:hover {
+  background: #d0d2d6;
+}
+
+.empty-state-small {
+  text-align: center;
+  color: #65676b;
+  font-size: 14px;
+  padding: 20px;
+  background: #f0f2f5;
+  border-radius: 8px;
+}

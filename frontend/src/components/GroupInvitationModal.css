@@ -1,0 +1,139 @@
+.group-invitation-container {
+  position: fixed;
+  right: 20px;
+  z-index: 10000;
+  pointer-events: none;
+}
+
+.group-invitation-card {
+  position: fixed;
+  right: 20px;
+  width: 350px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  animation: slideInRight 0.3s ease-out;
+  pointer-events: all;
+  border: 2px solid #667eea;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.invitation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.invitation-icon {
+  font-size: 24px;
+  color: #667eea;
+}
+
+.close-invitation-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #8a8d91;
+  font-size: 20px;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.close-invitation-btn:hover {
+  color: #050505;
+}
+
+.invitation-body {
+  margin-bottom: 15px;
+}
+
+.invitation-body h4 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  color: #050505;
+}
+
+.invitation-text {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #65676b;
+}
+
+.invitation-text strong {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.group-name {
+  margin: 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #050505;
+}
+
+.member-count {
+  margin: 5px 0 0 0;
+  font-size: 13px;
+  color: #8a8d91;
+}
+
+.invitation-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.reject-btn,
+.accept-btn {
+  flex: 1;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.reject-btn {
+  background: #f0f2f5;
+  color: #65676b;
+}
+
+.reject-btn:hover {
+  background: #e4e6eb;
+  color: #050505;
+}
+
+.accept-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.accept-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.accept-btn:active {
+  transform: translateY(0);
+}
+
