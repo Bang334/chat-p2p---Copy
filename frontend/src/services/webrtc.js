@@ -167,7 +167,8 @@ class WebRTCService {
             }
             break;
           case 'group-invitation':
-            // Group invitation handled by onMessage callback in Chat.js
+          case 'member-joined':
+            // Group invitation and member-joined handled by onMessage callback in Chat.js
             if (this.onMessageCallback) {
               this.onMessageCallback(peerId, data);
             }
@@ -343,7 +344,7 @@ class WebRTCService {
    * Send text message via P2P data channel
    * Auto-creates connection if not exists
    */
-  async sendMessage(peerId, message, groupId = null, signalingService = null, myPeerId = null) {
+  async sendMessage(peerId, message, groupId = null, signalingService = null, myPeerId = null, type = 'text') {
     // Check if data channel exists and is open
     let dataChannel = this.dataChannels.get(peerId);
     
@@ -404,7 +405,7 @@ class WebRTCService {
     }
 
     const data = {
-      type: 'text',
+      type: type,
       content: message,
       timestamp: Date.now(),
       groupId: groupId,  // Add groupId to distinguish group messages
@@ -688,13 +689,28 @@ class WebRTCService {
         continue;
       }
 
-      // Create connection if not exists or not connected
+      // Create connection if not exists
       if (!pc) {
         console.log(`📤 [connectToGroup] Creating new connection to ${peerId} for group ${groupId}`);
         this.createPeerConnection(peerId, signalingService, true);
         await this.createOffer(peerId, signalingService);
       } else {
-        console.log(`⚠️ [connectToGroup] Connection exists but not ready: ${peerId}, PC state: ${pc.connectionState}, DC state: ${dataChannel?.readyState}`);
+        // Connection exists, check status
+        console.log(`⚠️ [connectToGroup] Connection exists: ${peerId}, PC state: ${pc.connectionState}, DC state: ${dataChannel?.readyState}`);
+        
+        // If connection is failed or closed, recreate it
+        if (['failed', 'closed', 'disconnected'].includes(pc.connectionState)) {
+             console.log(`🔄 [connectToGroup] Recreating failed connection to ${peerId}`);
+             this.closePeerConnection(peerId);
+             this.createPeerConnection(peerId, signalingService, true);
+             await this.createOffer(peerId, signalingService);
+        } 
+        // If connected but no data channel, create it
+        else if (!dataChannel) {
+             console.log(`🔌 [connectToGroup] Creating missing data channel for ${peerId}`);
+             const newDc = pc.createDataChannel('chat', { ordered: true });
+             this.setupDataChannel(peerId, newDc);
+        }
       }
 
       connectedPeers.add(peerId);
@@ -732,7 +748,7 @@ class WebRTCService {
    * Auto-creates connections if needed
    * Fault tolerance: Skip blocked peers, rely on message relaying
    */
-  async sendGroupMessage(groupId, message, signalingService = null, myPeerId = null) {
+  async sendGroupMessage(groupId, message, signalingService = null, myPeerId = null, type = 'text') {
     const peerIds = this.groupConnections.get(groupId);
     
     if (!peerIds || peerIds.size === 0) {
@@ -790,7 +806,7 @@ class WebRTCService {
         const dataChannel = this.dataChannels.get(peerId);
         if (dataChannel && dataChannel.readyState === 'open') {
           const data = {
-            type: 'text',
+            type: type,
             content: message,
             timestamp: Date.now(),
             groupId: groupId,

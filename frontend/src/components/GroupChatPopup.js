@@ -249,10 +249,7 @@ function GroupChatPopup({
           <div>
             <span className="popup-title">{group.groupName}</span>
             <p className="popup-connection-status">
-              {isConnected 
-                ? `🟢 ${connectedPeersCount}/${group.memberCount - 1} peers` 
-                : `🔴 ${connectedPeersCount}/${group.memberCount - 1} peers`
-              }
+              {group.memberCount} members
             </p>
           </div>
         </div>
@@ -273,7 +270,6 @@ function GroupChatPopup({
           </button>
         </div>
       </div>
-
       <div className="popup-messages">
         {messages.length === 0 ? (
           <div className="no-messages-popup">

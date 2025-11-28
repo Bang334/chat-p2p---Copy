@@ -13,6 +13,7 @@ import ChatPopup from '../components/ChatPopup';
 import GroupChatPopup from '../components/GroupChatPopup';
 import CreateGroupModal from '../components/CreateGroupModal';
 import GroupInvitationModal from '../components/GroupInvitationModal';
+import InviteMemberModal from '../components/InviteMemberModal';
 import BroadcastModal from '../components/BroadcastModal';
 import PeerDiscoveryModal from '../components/PeerDiscoveryModal';
 import Notification from '../components/Notification';
@@ -33,6 +34,7 @@ function Chat() {
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [showPeerDiscovery, setShowPeerDiscovery] = useState(false);
   const [groupInvitations, setGroupInvitations] = useState([]); // Pending group invitations
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [notification, setNotification] = useState(null);
   const [unreadCounts, setUnreadCounts] = useState(new Map()); // Map<peerId/groupId, count> - Track unread messages
   const [knownPeers, setKnownPeers] = useState([]); // List of known peer IPs
@@ -43,6 +45,12 @@ function Chat() {
   const [currentUser, setCurrentUser] = useState(authService.getUser());
   const [fileChunks, setFileChunks] = useState(new Map()); // Track incoming file chunks
   const isInitializedRef = useRef(false);
+  const selectedGroupRef = useRef(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    selectedGroupRef.current = selectedGroup;
+  }, [selectedGroup]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -418,7 +426,7 @@ function Chat() {
                   });
                   
                   // Increment unread count if not viewing this group
-                  if (selectedGroup?.groupId !== file.groupId) {
+                  if (selectedGroupRef.current?.groupId !== file.groupId) {
                     setUnreadCounts(prev => {
                       const newMap = new Map(prev);
                       const current = newMap.get(file.groupId) || 0;
@@ -475,6 +483,69 @@ function Chat() {
         
         return;
       }
+
+      // Handle new member joined notification
+      if (data.type === 'member-joined') {
+        try {
+          const { groupId, newMemberPeerIds } = JSON.parse(data.content);
+          
+          // Update local group state
+          setGroups(prev => prev.map(g => {
+            if (g.groupId === groupId) {
+              // Add new members if not already present
+              const currentMembers = new Set(g.memberPeerIds);
+              newMemberPeerIds.forEach(id => currentMembers.add(id));
+              
+              // Ensure we include ourselves in the count logic if not present in list
+              // (Though memberPeerIds should ideally contain everyone except self, or everyone including self depending on convention)
+              // Convention used: memberPeerIds contains EVERYONE (including self) for consistent counting
+              
+              const updatedList = Array.from(currentMembers);
+              // If current user is not in the list, add them for the count, but don't mess up the list if it's supposed to be "others"
+              // Actually, let's standardize: memberPeerIds should contain ALL members.
+              
+              if (!currentMembers.has(currentUser.peerId)) {
+                  updatedList.push(currentUser.peerId);
+              }
+              
+              return {
+                ...g,
+                memberPeerIds: updatedList,
+                memberCount: updatedList.length
+              };
+            }
+            return g;
+          }));
+          
+          // Update selectedGroup if active
+          if (selectedGroupRef.current?.groupId === groupId) {
+            setSelectedGroup(prev => {
+              const currentMembers = new Set(prev.memberPeerIds);
+              newMemberPeerIds.forEach(id => currentMembers.add(id));
+              
+              const updatedList = Array.from(currentMembers);
+              if (!currentMembers.has(currentUser.peerId)) {
+                  updatedList.push(currentUser.peerId);
+              }
+
+              return {
+                ...prev,
+                memberPeerIds: updatedList,
+                memberCount: updatedList.length
+              };
+            });
+          }
+          
+          // Connect to new members
+          const activeService = getActiveSignalingService();
+          webrtcService.connectToGroup(groupId, newMemberPeerIds, activeService, currentUser.peerId);
+          
+          showNotification(`Có ${newMemberPeerIds.length} thành viên mới tham gia nhóm`, 'info');
+        } catch (error) {
+          console.error('Error handling member-joined:', error);
+        }
+        return;
+      }
       
       // Regular text messages
       if (data.type === 'text') {
@@ -487,7 +558,7 @@ function Chat() {
           });
           
           // Increment unread count if not viewing this group
-          if (selectedGroup?.groupId !== data.groupId) {
+          if (selectedGroupRef.current?.groupId !== data.groupId) {
             setUnreadCounts(prev => {
               const newMap = new Map(prev);
               const current = newMap.get(data.groupId) || 0;
@@ -830,7 +901,7 @@ function Chat() {
       groupId: invitation.groupId,
       groupName: invitation.groupName,
       memberPeerIds: invitation.memberPeerIds,
-      memberCount: invitation.memberCount,
+      memberCount: invitation.memberPeerIds.length, // Recalculate count from list (includes self)
       createdBy: invitation.createdBy,
       creatorUsername: invitation.creatorUsername,
       createdAt: invitation.timestamp
@@ -843,8 +914,6 @@ function Chat() {
     setGroupInvitations(prev => prev.filter(inv => inv.groupId !== invitation.groupId));
     
     // Connect to group members (include myself in the group)
-    // Note: invitation.memberPeerIds includes all members except myself
-    // We need to connect to all of them, and also add myself to groupConnections
     try {
       const activeService = getActiveSignalingService();
       await webrtcService.connectToGroup(invitation.groupId, invitation.memberPeerIds, activeService, currentUser.peerId);
@@ -853,6 +922,25 @@ function Chat() {
       // Auto switch to groups tab and select the group
       setActiveTab('groups');
       await handleSelectGroup(newGroup, false);
+
+      // Broadcast 'member-joined' to all other members
+      const memberJoinedPayload = JSON.stringify({
+        groupId: invitation.groupId,
+        newMemberPeerIds: [currentUser.peerId]
+      });
+
+      // Filter out myself from the list to send to others
+      const otherMembers = invitation.memberPeerIds.filter(id => id !== currentUser.peerId);
+
+      for (const peerId of otherMembers) {
+        try {
+          // Send 'member-joined'
+          await webrtcService.sendMessage(peerId, memberJoinedPayload, invitation.groupId, signalingService, currentUser.peerId, 'member-joined');
+        } catch (error) {
+          console.error(`Failed to notify ${peerId} of joining:`, error);
+        }
+      }
+
     } catch (error) {
       console.error('Error connecting to group:', error);
     }
@@ -863,6 +951,58 @@ function Chat() {
     setGroupInvitations(prev => prev.filter(inv => inv.groupId !== groupId));
     
     showNotification('Đã từ chối lời mời', 'info');
+  };
+
+  const handleInviteMembers = async (newMemberPeerIds) => {
+    if (!selectedGroup) return;
+    const groupId = selectedGroup.groupId;
+    
+    // 1. Calculate future member list (but don't update local state yet)
+    // We need to send the FULL list to the new member so they know who to connect to
+    const currentMemberIds = selectedGroup.memberPeerIds;
+    // Ensure current user is in the list before merging
+    if (!currentMemberIds.includes(currentUser.peerId)) {
+        currentMemberIds.push(currentUser.peerId);
+    }
+    const futureMemberPeerIds = [...new Set([...currentMemberIds, ...newMemberPeerIds])];
+    
+    // 2. Connect to new members first (to send the invite)
+    const activeService = getActiveSignalingService();
+    await webrtcService.connectToGroup(groupId, newMemberPeerIds, activeService, currentUser.peerId);
+    
+    // 3. Send invitation to new members
+    const invitationMessage = {
+        type: 'group-invitation',
+        groupId,
+        groupName: selectedGroup.groupName,
+        memberPeerIds: futureMemberPeerIds,
+        memberCount: currentMemberIds.length, // Send CURRENT count (excluding new members) for display
+        createdBy: selectedGroup.createdBy,
+        creatorUsername: selectedGroup.creatorUsername,
+        timestamp: Date.now()
+    };
+    
+    // Send to each new member
+    for (const peerId of newMemberPeerIds) {
+        try {
+             const sendInvite = () => {
+                 const dc = webrtcService.dataChannels.get(peerId);
+                 if (dc && dc.readyState === 'open') {
+                     dc.send(JSON.stringify(invitationMessage));
+                 } else {
+                     setTimeout(sendInvite, 1000);
+                 }
+             };
+             sendInvite();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+    
+    // Note: We do NOT update local state or notify existing members yet.
+    // We wait for the new member to accept and send a 'member-joined' message.
+    
+    showNotification(`Đã gửi lời mời tới ${newMemberPeerIds.length} người`, 'success');
   };
 
   const handleBroadcast = async (message, peerIds, groupIds, file = null) => {
@@ -1208,7 +1348,7 @@ function Chat() {
             onSendMessage={sendGroupMessage}
             onSendFile={sendGroupFile}
             onLeaveGroup={null}
-            onInviteMembers={null}
+            onInviteMembers={() => setShowInviteModal(true)}
             onBroadcast={null}
             onSendToRecipients={null}
             selectedRecipients={null}
@@ -1321,6 +1461,16 @@ function Chat() {
         invitations={groupInvitations}
         onAccept={handleAcceptGroupInvitation}
         onReject={handleRejectGroupInvitation}
+      />
+
+      {/* Invite Member Modal */}
+      <InviteMemberModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        onlinePeers={onlinePeers}
+        currentMembers={selectedGroup ? selectedGroup.memberPeerIds : []}
+        onInvite={handleInviteMembers}
+        showNotification={showNotification}
       />
 
       {/* Peer Discovery Modal */}

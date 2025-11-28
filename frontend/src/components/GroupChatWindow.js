@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiSend, FiPaperclip, FiDownload, FiUsers, FiSmile, FiLogOut } from 'react-icons/fi';
+import { FiSend, FiPaperclip, FiDownload, FiUsers, FiSmile, FiLogOut, FiUserPlus } from 'react-icons/fi';
 import { convertEmoticons } from '../utils/emoticonConverter';
 import './GroupChatWindow.css';
 
@@ -139,7 +139,10 @@ function GroupChatWindow({
   // Common emojis
   const commonEmojis = ['😀', '😂', '😍', '🥰', '😘', '😊', '😎', '🤔', '😢', '😭', '😡', '🤯', '👍', '👎', '❤️', '💕', '🔥', '💯', '🎉', '👏'];
 
-  const isConnected = connectedPeersCount === (group.memberCount - 1);
+  // Relaxed condition: Allow chat if we have at least one connection, or if we are the only one (testing)
+  // Realistically, we should allow chatting always, and just deliver to whoever is reachable.
+  const isConnected = true; 
+  const isFullyConnected = connectedPeersCount === (group.memberCount - 1);
 
   const handleLeaveClick = () => {
     if (onLeaveGroup) {
@@ -157,15 +160,23 @@ function GroupChatWindow({
           </div>
           <div>
             <h3>{group.groupName}</h3>
-            <p className={`group-connection-status ${isConnected ? 'connected' : 'connecting'}`}>
-              {isConnected 
-                ? `🟢 ${connectedPeersCount}/${group.memberCount - 1} peers connected (P2P Mesh)` 
-                : `🔴 Connecting... ${connectedPeersCount}/${group.memberCount - 1} peers`
-              }
+            <p className="group-connection-status connected">
+              {group.memberCount} members
             </p>
           </div>
         </div>
         <div className="group-actions">
+          {onInviteMembers && (
+            <button 
+              className="leave-group-btn" 
+              onClick={onInviteMembers}
+              title="Mời thành viên mới"
+              style={{ marginRight: '8px' }}
+            >
+              <FiUserPlus />
+              <span>Mời</span>
+            </button>
+          )}
           {onLeaveGroup && (
             <button 
               className="leave-group-btn" 
@@ -184,9 +195,9 @@ function GroupChatWindow({
         {messages.length === 0 ? (
           <div className="no-messages">
             <p>No messages yet. Start the conversation! 💬</p>
-            {!isConnected && (
+            {!isFullyConnected && (
               <p className="connecting-message">
-                Establishing P2P mesh connections...
+                Waiting for some peers to connect... (You can still chat with connected members)
               </p>
             )}
           </div>
@@ -271,10 +282,10 @@ function GroupChatWindow({
         <input
           type="text"
           className="message-input"
-          placeholder={isConnected ? "Type a message..." : "Waiting for connections..."}
+          placeholder={connectedPeersCount > 0 ? "Type a message..." : "Waiting for connections (messages may not be delivered)..."}
           value={newMessage}
           onChange={handleInputChange}
-          disabled={!isConnected}
+          // Always allow typing
         />
         
         {/* Emoji Picker */}
@@ -330,7 +341,7 @@ function GroupChatWindow({
         <button
           type="submit"
           className="send-btn"
-          disabled={!newMessage.trim() || !isConnected}
+          disabled={!newMessage.trim()}
         >
           <FiSend />
         </button>
